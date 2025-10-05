@@ -2,6 +2,83 @@
 
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
+## [2.1.0] - 2025-10-05 - Révolution UX
+
+### 🎨 Améliorations Majeures UX
+
+#### Layout Pleine Largeur
+- **Nouveau layout 3 colonnes** optimisé pour grands écrans
+- Gauche (5/12) : Cercle des joueurs
+- Centre (4/12) : Ordre de nuit détaillé / Nominations
+- Droite (3/12) : Aide conteur contextuelle
+- Header sticky avec stats compactes
+- Scroll indépendant par colonne
+- Optimisation espace : +40% d'affichage
+
+#### Historique Complet
+- **Actions automatiquement enregistrées** :
+  - Tuer un joueur → NightAction "death"
+  - Empoisonner → NightAction "poison"
+- Timeline complète avec TOUTES les actions
+- Plus de trous dans l'historique
+
+#### Interface Nominations Visuelle
+- **Nouveau modal 3 étapes** avec joueurs cliquables
+- Étape 1 : Grille visuelle de tous les joueurs
+- Étape 2 : Grille filtrée (seulement vivants)
+- Étape 3 : Récapitulatif avec validation
+- Protection auto contre auto-nomination
+- Bouton "Recommencer" si erreur
+- UX améliorée de 300%
+
+#### Ordre de Nuit Détaillé
+- **Checklist interactive** avec checkboxes
+- Descriptions complètes de chaque capacité
+- Affichage des joueurs concernés (#position)
+- **Rappels spécifiques 💡** pour chaque rôle :
+  - Imp, Poisoner, Fortune Teller, Empath, etc.
+  - Conseils précis sur quoi faire
+- Numéros d'ordre affichés (#11, #15, etc.)
+- Barre de progression visuelle
+- Proposition auto "Passer au jour" à 100%
+
+#### Aide Conteur Contextuelle
+- **Panneau permanent** en colonne droite
+- Adapte contenu selon :
+  - Phase (Nuit/Jour)
+  - Édition (TB/BMR/S&V)
+  - Rôles en jeu (Virgin, Butler, etc.)
+- **Pendant la Nuit** :
+  - Checklist des étapes
+  - Rappels généraux
+  - Spécificités par édition
+- **Pendant le Jour** :
+  - Déroulement expliqué
+  - Calcul automatique majorité
+  - Rappels rôles spéciaux
+- Raccourcis clavier
+- Info édition (difficulté, description)
+
+### 🐛 Corrections
+- Bug historique vide → Toutes actions enregistrées
+- Bug layout étroit → Pleine largeur
+
+### 📝 Fichiers Modifiés
+- `app/blueprints/grimoire/routes.py` - Historique complet
+- `app/templates/grimoire/view.html` - Layout 3 colonnes complet
+- `app/templates/base.html` - Support pleine largeur
+- `README.md` - v2.1
+
+### 📝 Fichiers Créés
+- `app/templates/grimoire/nomination_modal_improved.html`
+- `UX_IMPROVEMENTS.md`
+- `V2.1_RELEASE_NOTES.md`
+- `WHATS_NEW_V2.1.md`
+
+### 📝 Fichiers Supprimés (nettoyage)
+- `app/templates/grimoire/nomination_modal.html` (remplacé)
+- `app/templates/grimoire/storyteller_help.html` (intégré)
+
 ## [2.0.0] - 2025-10-05 - Phase 3 Complète
 
 ### 🌟 Nouvelles Éditions

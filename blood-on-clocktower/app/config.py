@@ -34,6 +34,16 @@ class ProductionConfig(Config):
     """Configuration pour la production."""
     DEBUG = False
     TESTING = False
+    
+    # Override SECRET_KEY - must be set in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY environment variable must be set in production")
+    
+    # Use PostgreSQL in production if DATABASE_URL is provided
+    # Otherwise, fall back to SQLite
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        f'sqlite:///{BASE_DIR / "instance" / "botc.db"}'
 
 
 class TestingConfig(Config):
