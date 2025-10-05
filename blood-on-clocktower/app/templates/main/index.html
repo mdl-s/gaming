@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Blood on the Clocktower{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <!-- En-tête -->
+    <div class="text-center mb-12">
+        <h1 class="text-5xl font-bold mb-4">Bienvenue, Conteur !</h1>
+        <p class="text-xl text-gray-400">Gestionnaire de parties Blood on the Clocktower</p>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <!-- Nouvelle partie -->
+        <a href="{{ url_for('game.new_game') }}" class="block p-6 bg-secondary rounded-lg border-2 border-gray-700 hover:border-red-500 transition-all transform hover:scale-105">
+            <div class="flex items-center mb-4">
+                <i data-lucide="plus-circle" class="w-8 h-8 text-red-500 mr-3"></i>
+                <h2 class="text-2xl font-bold">Nouvelle Partie</h2>
+            </div>
+            <p class="text-gray-400">Créer et configurer une nouvelle partie de Blood on the Clocktower</p>
+        </a>
+
+        <!-- Parties en cours -->
+        <a href="{{ url_for('game.list_games') }}" class="block p-6 bg-secondary rounded-lg border-2 border-gray-700 hover:border-blue-500 transition-all transform hover:scale-105">
+            <div class="flex items-center mb-4">
+                <i data-lucide="list" class="w-8 h-8 text-blue-500 mr-3"></i>
+                <h2 class="text-2xl font-bold">Mes Parties</h2>
+            </div>
+            <p class="text-gray-400">Voir et reprendre vos parties en cours ou terminées</p>
+        </a>
+
+        <!-- Personnages -->
+        <a href="{{ url_for('admin.characters') }}" class="block p-6 bg-secondary rounded-lg border-2 border-gray-700 hover:border-purple-500 transition-all transform hover:scale-105">
+            <div class="flex items-center mb-4">
+                <i data-lucide="users" class="w-8 h-8 text-purple-500 mr-3"></i>
+                <h2 class="text-2xl font-bold">Personnages</h2>
+            </div>
+            <p class="text-gray-400">Consulter la liste complète des personnages et leurs capacités</p>
+        </a>
+    </div>
+
+    <!-- Parties récentes -->
+    {% if recent_games %}
+    <div class="mb-12">
+        <h2 class="text-3xl font-bold mb-6">Parties Récentes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for game in recent_games %}
+            <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-xl font-bold">{{ game.name }}</h3>
+                    <span class="px-2 py-1 text-xs rounded 
+                        {% if game.status == 'setup' %}bg-yellow-600
+                        {% elif game.status == 'in_progress' %}bg-green-600
+                        {% else %}bg-gray-600{% endif %}">
+                        {% if game.status == 'setup' %}Config
+                        {% elif game.status == 'in_progress' %}En cours
+                        {% else %}Terminée{% endif %}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-400 mb-3">
+                    {{ game.edition.name }} • {{ game.player_count }} joueurs
+                </p>
+                <p class="text-xs text-gray-500 mb-3">
+                    Créée le {{ game.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                </p>
+                <div class="flex space-x-2">
+                    {% if game.status == 'setup' %}
+                        <a href="{{ url_for('game.setup', game_id=game.id) }}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-center text-sm">
+                            Configurer
+                        </a>
+                    {% elif game.status == 'in_progress' %}
+                        <a href="{{ url_for('grimoire.view', game_id=game.id) }}" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-center text-sm">
+                            Ouvrir Grimoire
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('game.view', game_id=game.id) }}" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-center text-sm">
+                            Voir Détails
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Éditions disponibles -->
+    <div>
+        <h2 class="text-3xl font-bold mb-6">Éditions Disponibles</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for edition in editions %}
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                <h3 class="text-xl font-bold mb-2">{{ edition.name }}</h3>
+                <p class="text-sm text-gray-400 mb-3">{{ edition.description or 'Aucune description' }}</p>
+                <div class="flex items-center text-sm text-gray-500">
+                    <span class="mr-2">Difficulté :</span>
+                    <div class="flex">
+                        {% for i in range(1, 4) %}
+                            <i data-lucide="star" class="w-4 h-4 {% if i <= edition.difficulty_level %}text-yellow-500{% else %}text-gray-600{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

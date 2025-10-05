@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Historique - {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="max-w-5xl mx-auto">
+        <a href="{{ url_for('grimoire.view', game_id=game.id) }}" class="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+            ← Retour au Grimoire
+        </a>
+
+        <h1 class="text-4xl font-bold mb-8">📜 Historique de la Partie</h1>
+        <p class="text-xl text-gray-400 mb-8">{{ game.name }} - Chronologie complète</p>
+
+        <!-- Timeline -->
+        <div class="space-y-6">
+            {% set max_night = game.current_night_number %}
+            {% set max_day = game.current_day_number %}
+            {% set max_phase = [max_night, max_day]|max %}
+            
+            {% for phase_num in range(1, max_phase + 1) %}
+                <!-- Nuit -->
+                {% if phase_num <= game.current_night_number %}
+                <div class="bg-secondary rounded-lg p-6 border-2 border-purple-700">
+                    <h2 class="text-2xl font-bold mb-4">🌙 Nuit {{ phase_num }}</h2>
+                    
+                    <!-- Actions de nuit -->
+                    {% set night_actions = game.night_actions.filter_by(night_number=phase_num).all() %}
+                    {% if night_actions %}
+                    <div class="space-y-3">
+                        {% for action in night_actions %}
+                        <div class="bg-tertiary rounded p-4 border border-gray-600">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="font-bold text-purple-400">{{ action.player.name }}</span>
+                                    <span class="text-gray-400"> ({{ action.character.name }}) </span>
+                                    <span class="text-sm text-gray-500">→ {{ action.action_type }}</span>
+                                </div>
+                                <span class="text-xs text-gray-500">{{ action.timestamp.strftime('%H:%M') }}</span>
+                            </div>
+                            
+                            {% if action.target_player %}
+                            <p class="text-sm text-gray-300">
+                                <strong>Cible :</strong> {{ action.target_player.name }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if action.result %}
+                            <p class="text-sm text-gray-300">
+                                <strong>Résultat :</strong> {{ action.result }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if action.notes %}
+                            <p class="text-xs text-gray-400 mt-2">{{ action.notes }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-400 italic">Aucune action enregistrée</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Jour -->
+                {% if phase_num <= game.current_day_number %}
+                <div class="bg-secondary rounded-lg p-6 border-2 border-yellow-700">
+                    <h2 class="text-2xl font-bold mb-4">☀️ Jour {{ phase_num }}</h2>
+                    
+                    <!-- Nominations et votes -->
+                    {% set day_actions = game.day_actions.filter_by(day_number=phase_num, action_type='nomination').all() %}
+                    {% if day_actions %}
+                    <div class="space-y-3">
+                        {% for nomination in day_actions %}
+                        <div class="bg-tertiary rounded p-4 border border-gray-600">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="font-bold text-yellow-400">{{ nomination.nominator.name }}</span>
+                                    <span class="text-gray-400"> nomine </span>
+                                    <span class="font-bold text-orange-400">{{ nomination.nominee.name }}</span>
+                                </div>
+                                <span class="text-xs text-gray-500">{{ nomination.timestamp.strftime('%H:%M') }}</span>
+                            </div>
+                            
+                            {% if nomination.vote_count is not none %}
+                            <div class="flex items-center space-x-4 text-sm mt-2">
+                                <span class="text-green-400">✓ {{ nomination.vote_count }} pour</span>
+                                <span class="text-red-400">✗ {{ nomination.votes_against or 0 }} contre</span>
+                                {% if nomination.executed %}
+                                    <span class="bg-red-600 px-2 py-1 rounded text-xs font-bold">💀 EXÉCUTÉ</span>
+                                {% else %}
+                                    <span class="bg-gray-600 px-2 py-1 rounded text-xs">Survécu</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if nomination.notes %}
+                            <p class="text-xs text-gray-400 mt-2">{{ nomination.notes }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-400 italic">Aucune nomination</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+            
+            {% if game.status == 'finished' %}
+            <div class="bg-secondary rounded-lg p-6 border-2 {% if game.winner == 'good' %}border-blue-700{% else %}border-red-700{% endif %}">
+                <h2 class="text-3xl font-bold text-center mb-2">🏁 Fin de Partie</h2>
+                <p class="text-xl text-center {% if game.winner == 'good' %}text-blue-400{% else %}text-red-400{% endif %}">
+                    {% if game.winner == 'good' %}
+                        👑 Victoire du Bien !
+                    {% else %}
+                        💀 Victoire du Mal !
+                    {% endif %}
+                </p>
+                <p class="text-sm text-gray-400 text-center mt-2">
+                    Terminée le {{ game.ended_at.strftime('%d/%m/%Y à %H:%M') }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-8 flex space-x-4">
+            <a href="{{ url_for('grimoire.view', game_id=game.id) }}" 
+               class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-center font-bold">
+                Retour au Grimoire
+            </a>
+            <button onclick="window.print()" 
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold">
+                🖨️ Imprimer l'Historique
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

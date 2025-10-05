@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.name }} - Détails{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <a href="{{ url_for('grimoire.view', game_id=game.id) }}" class="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+            ← Retour au Grimoire
+        </a>
+
+        <div class="bg-secondary rounded-lg p-8 border-2 
+            {% if player.is_alive %}
+                {% if player.alignment == 'good' %}border-blue-500{% else %}border-red-500{% endif %}
+            {% else %}border-gray-600{% endif %} mb-6">
+            
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 {% if not player.is_alive %}text-gray-500{% endif %}">
+                        {{ player.name }}
+                    </h1>
+                    <p class="text-xl text-gray-400">Position #{{ player.seat_position }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-4 py-2 rounded-lg font-bold text-lg mb-2
+                        {% if player.alignment == 'good' %}bg-blue-600{% else %}bg-red-600{% endif %}">
+                        {{ player.character.name }}
+                    </span>
+                    <p class="text-sm text-gray-400">{{ player.character.character_type | upper }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="text-center p-4 bg-tertiary rounded-lg">
+                    <div class="text-sm text-gray-400 mb-1">Statut</div>
+                    <div class="text-xl font-bold {% if player.is_alive %}text-green-400{% else %}text-red-400{% endif %}">
+                        {% if player.is_alive %}Vivant{% else %}Mort{% endif %}
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-tertiary rounded-lg">
+                    <div class="text-sm text-gray-400 mb-1">Alignement</div>
+                    <div class="text-xl font-bold {% if player.alignment == 'good' %}text-blue-400{% else %}text-red-400{% endif %}">
+                        {% if player.alignment == 'good' %}Bon{% else %}Maléfique{% endif %}
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-tertiary rounded-lg">
+                    <div class="text-sm text-gray-400 mb-1">Empoisonné</div>
+                    <div class="text-xl font-bold {% if player.is_poisoned %}text-yellow-400{% else %}text-gray-500{% endif %}">
+                        {% if player.is_poisoned %}Oui 🧪{% else %}Non{% endif %}
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-tertiary rounded-lg">
+                    <div class="text-sm text-gray-400 mb-1">Ivre</div>
+                    <div class="text-xl font-bold {% if player.is_drunk %}text-amber-400{% else %}text-gray-500{% endif %}">
+                        {% if player.is_drunk %}Oui 🍺{% else %}Non{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-tertiary rounded-lg p-4 mb-6">
+                <h3 class="font-bold mb-2">Capacité du Personnage</h3>
+                <p class="text-sm text-gray-300">{{ player.character.ability_description }}</p>
+            </div>
+        </div>
+
+        <!-- Notes du Conteur -->
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Notes du Conteur</h2>
+            <textarea 
+                id="player-notes"
+                class="w-full h-32 px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-red-500 text-white"
+                placeholder="Ajoutez des notes sur ce joueur..."
+            >{{ player.notes or '' }}</textarea>
+            <button onclick="saveNotes()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold">
+                Enregistrer les Notes
+            </button>
+        </div>
+
+        <!-- Historique des actions -->
+        {% if night_actions %}
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4">Historique des Actions</h2>
+            <div class="space-y-3">
+                {% for action in night_actions %}
+                <div class="bg-tertiary rounded-lg p-4 border border-gray-600">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold">Nuit {{ action.night_number }}</span>
+                        <span class="text-sm text-gray-400">{{ action.timestamp.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    <p class="text-sm text-gray-300">
+                        <strong>Action:</strong> {{ action.action_type }}
+                        {% if action.target_player %}
+                        <br><strong>Cible:</strong> {{ action.target_player.name }}
+                        {% endif %}
+                    </p>
+                    {% if action.notes %}
+                    <p class="text-xs text-gray-400 mt-2">{{ action.notes }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function saveNotes() {
+    const notes = document.getElementById('player-notes').value;
+    
+    fetch(`/grimoire/{{ game.id }}/player/{{ player.id }}/notes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes: notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Notes enregistrées avec succès !');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'enregistrement des notes.');
+    });
+}
+</script>
+{% endblock %}
+

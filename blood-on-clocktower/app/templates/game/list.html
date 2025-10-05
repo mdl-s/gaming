@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Mes Parties - Blood on the Clocktower{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold">Mes Parties</h1>
+        <a href="{{ url_for('game.new_game') }}" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold">
+            + Nouvelle Partie
+        </a>
+    </div>
+
+    {% if games %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for game in games %}
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold">{{ game.name }}</h2>
+                <span class="px-3 py-1 text-sm rounded font-medium
+                    {% if game.status == 'setup' %}bg-yellow-600
+                    {% elif game.status == 'in_progress' %}bg-green-600
+                    {% else %}bg-gray-600{% endif %}">
+                    {% if game.status == 'setup' %}Configuration
+                    {% elif game.status == 'in_progress' %}En cours
+                    {% else %}Terminée{% endif %}
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-4">
+                <p class="text-sm text-gray-400">
+                    <strong>Édition:</strong> {{ game.edition.name }}
+                </p>
+                <p class="text-sm text-gray-400">
+                    <strong>Joueurs:</strong> {{ game.player_count }}
+                </p>
+                <p class="text-sm text-gray-400">
+                    <strong>Créée:</strong> {{ game.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                </p>
+                {% if game.status == 'finished' %}
+                <p class="text-sm {% if game.winner == 'good' %}text-blue-400{% else %}text-red-400{% endif %}">
+                    <strong>Gagnant:</strong> {% if game.winner == 'good' %}Le Bien 👑{% else %}Le Mal 💀{% endif %}
+                </p>
+                {% elif game.status == 'in_progress' %}
+                <p class="text-sm text-gray-400">
+                    <strong>Phase actuelle:</strong> 
+                    {% if game.current_phase == 'night' %}
+                        🌙 Nuit {{ game.current_night_number }}
+                    {% else %}
+                        ☀️ Jour {{ game.current_day_number }}
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="flex space-x-2">
+                {% if game.status == 'setup' %}
+                    <a href="{{ url_for('game.setup', game_id=game.id) }}" 
+                       class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center font-medium">
+                        Configurer
+                    </a>
+                {% elif game.status == 'in_progress' %}
+                    <a href="{{ url_for('grimoire.view', game_id=game.id) }}" 
+                       class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-center font-medium">
+                        Ouvrir Grimoire
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('game.view', game_id=game.id) }}" 
+                       class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-center font-medium">
+                        Voir Détails
+                    </a>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('game.delete_game', game_id=game.id) }}" 
+                      onsubmit="return confirm('Confirmer la suppression de cette partie ?')" class="flex-shrink-0">
+                    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded font-medium">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <i data-lucide="inbox" class="w-16 h-16 text-gray-600 mx-auto mb-4"></i>
+        <p class="text-xl text-gray-400 mb-4">Aucune partie trouvée</p>
+        <a href="{{ url_for('game.new_game') }}" class="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold">
+            Créer votre première partie
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

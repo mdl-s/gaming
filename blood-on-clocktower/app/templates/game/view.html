@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game.name }} - Détails{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-8">
+            <a href="{{ url_for('game.list_games') }}" class="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+                ← Retour aux parties
+            </a>
+            <h1 class="text-4xl font-bold mb-2">{{ game.name }}</h1>
+            <p class="text-xl text-gray-400">{{ game.edition.name }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Informations</h2>
+                <div class="space-y-2">
+                    <p class="text-sm"><strong>Statut:</strong> 
+                        <span class="px-2 py-1 text-xs rounded
+                            {% if game.status == 'setup' %}bg-yellow-600
+                            {% elif game.status == 'in_progress' %}bg-green-600
+                            {% else %}bg-gray-600{% endif %}">
+                            {% if game.status == 'setup' %}Configuration
+                            {% elif game.status == 'in_progress' %}En cours
+                            {% else %}Terminée{% endif %}
+                        </span>
+                    </p>
+                    <p class="text-sm"><strong>Joueurs:</strong> {{ game.player_count }}</p>
+                    <p class="text-sm"><strong>Créée le:</strong> {{ game.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% if game.started_at %}
+                    <p class="text-sm"><strong>Démarrée le:</strong> {{ game.started_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% endif %}
+                    {% if game.ended_at %}
+                    <p class="text-sm"><strong>Terminée le:</strong> {{ game.ended_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    <p class="text-sm"><strong>Gagnant:</strong> 
+                        <span class="{% if game.winner == 'good' %}text-blue-400{% else %}text-red-400{% endif %} font-bold">
+                            {% if game.winner == 'good' %}Le Bien 👑{% else %}Le Mal 💀{% endif %}
+                        </span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if game.status != 'setup' %}
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Statistiques</h2>
+                <div class="space-y-2">
+                    <p class="text-sm"><strong>Vivants:</strong> 
+                        {{ game.players.filter_by(is_alive=True).count() }} / {{ game.player_count }}
+                    </p>
+                    <p class="text-sm"><strong>Camp Bon:</strong> 
+                        {{ game.players.filter_by(alignment='good').count() }}
+                    </p>
+                    <p class="text-sm"><strong>Camp Maléfique:</strong> 
+                        {{ game.players.filter_by(alignment='evil').count() }}
+                    </p>
+                    {% if game.status == 'in_progress' %}
+                    <p class="text-sm"><strong>Phase actuelle:</strong>
+                        {% if game.current_phase == 'night' %}
+                            🌙 Nuit {{ game.current_night_number }}
+                        {% else %}
+                            ☀️ Jour {{ game.current_day_number }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if game.status != 'setup' %}
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700 mb-6">
+            <h2 class="text-xl font-bold mb-4">Joueurs</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {% for player in game.players.order_by(db.Player.seat_position).all() %}
+                <div class="bg-tertiary rounded p-3 border-2 
+                    {% if player.is_alive %}
+                        {% if player.alignment == 'good' %}border-blue-500{% else %}border-red-500{% endif %}
+                    {% else %}border-gray-600{% endif %}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold {% if not player.is_alive %}text-gray-500{% endif %}">
+                                #{{ player.seat_position }} {{ player.name }}
+                            </h3>
+                            <p class="text-sm text-gray-400">{{ player.character.name }}</p>
+                            <p class="text-xs text-gray-500">{{ player.character.character_type }}</p>
+                        </div>
+                        <div class="flex space-x-1">
+                            {% if not player.is_alive %}<span>💀</span>{% endif %}
+                            {% if player.is_poisoned %}<span>🧪</span>{% endif %}
+                            {% if player.is_drunk %}<span>🍺</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="flex space-x-4">
+            {% if game.status == 'setup' %}
+                {% if game.players.count() > 0 %}
+                    <form method="POST" action="{{ url_for('game.start_game', game_id=game.id) }}" class="flex-1">
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold">
+                            ▶️ Démarrer la Partie
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('game.setup', game_id=game.id) }}" 
+                       class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-center font-bold">
+                        Continuer la Configuration
+                    </a>
+                {% endif %}
+            {% elif game.status == 'in_progress' %}
+                <a href="{{ url_for('grimoire.view', game_id=game.id) }}" 
+                   class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-center font-bold">
+                    Ouvrir le Grimoire
+                </a>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('game.delete_game', game_id=game.id) }}" 
+                  onsubmit="return confirm('Confirmer la suppression de cette partie ?')" class="flex-1">
+                <button type="submit" class="w-full bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg font-bold">
+                    Supprimer la Partie
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

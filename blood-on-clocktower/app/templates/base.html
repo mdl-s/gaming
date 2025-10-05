@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Blood on the Clocktower{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Dark theme personnalisé */
+        .dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: #475569;
+            --good-color: #3b82f6;
+            --evil-color: #ef4444;
+            --dead-color: #6b7280;
+            --poisoned-color: #eab308;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .bg-primary { background-color: var(--bg-primary); }
+        .bg-secondary { background-color: var(--bg-secondary); }
+        .bg-tertiary { background-color: var(--bg-tertiary); }
+        
+        .text-good { color: var(--good-color); }
+        .text-evil { color: var(--evil-color); }
+        .text-dead { color: var(--dead-color); }
+        .text-poisoned { color: var(--poisoned-color); }
+        
+        .bg-good { background-color: var(--good-color); }
+        .bg-evil { background-color: var(--evil-color); }
+        .bg-dead { background-color: var(--dead-color); }
+        .bg-poisoned { background-color: var(--poisoned-color); }
+        
+        .border-good { border-color: var(--good-color); }
+        .border-evil { border-color: var(--evil-color); }
+        
+        /* Animation pour les notifications */
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .flash-message {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-secondary border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="{{ url_for('main.index') }}" class="text-2xl font-bold text-red-500">
+                            🕐 Blood on the Clocktower
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="{{ url_for('main.index') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Accueil
+                        </a>
+                        <a href="{{ url_for('game.new_game') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Nouvelle Partie
+                        </a>
+                        <a href="{{ url_for('game.list_games') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Parties
+                        </a>
+                        <a href="{{ url_for('admin.characters') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Personnages
+                        </a>
+                        <a href="{{ url_for('admin.scripts') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Scripts
+                        </a>
+                        <a href="{{ url_for('main.rules') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white">
+                            Règles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="fixed top-20 right-4 z-50 space-y-2">
+                {% for category, message in messages %}
+                    <div class="flash-message max-w-md px-4 py-3 rounded-lg shadow-lg {% if category == 'error' %}bg-red-600{% elif category == 'warning' %}bg-yellow-600{% elif category == 'success' %}bg-green-600{% else %}bg-blue-600{% endif %} text-white">
+                        <div class="flex items-center">
+                            <span class="flex-1">{{ message }}</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Contenu principal -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-secondary border-t border-gray-700 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-400 text-sm">
+                Blood on the Clocktower - Gestionnaire de Partie pour Conteurs
+            </p>
+        </div>
+    </footer>
+
+    <!-- Initialisation des icônes Lucide -->
+    <script>
+        lucide.createIcons();
+        
+        // Auto-masquer les messages flash après 5 secondes
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.transition = 'opacity 0.5s';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

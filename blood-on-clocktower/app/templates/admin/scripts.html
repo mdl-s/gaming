@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Scripts Personnalisés - Blood on the Clocktower{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold">Scripts Personnalisés</h1>
+        <button onclick="showCreateScriptModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold">
+            + Nouveau Script
+        </button>
+    </div>
+
+    <p class="text-gray-400 mb-8">
+        Créez des scripts personnalisés en sélectionnant les personnages que vous souhaitez inclure dans vos parties.
+    </p>
+
+    <!-- Scripts existants -->
+    {% if scripts %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for script in scripts %}
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700 hover:border-purple-500 transition-colors">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold">{{ script.name }}</h2>
+                <span class="text-xs px-2 py-1 bg-gray-700 rounded">{{ script.character_count }} personnages</span>
+            </div>
+            
+            {% if script.description %}
+            <p class="text-sm text-gray-400 mb-4">{{ script.description }}</p>
+            {% endif %}
+            
+            <div class="flex space-x-2">
+                <button onclick="viewScript({{ script.id }})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">
+                    Voir Détails
+                </button>
+                <button onclick="deleteScript({{ script.id }})" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded text-sm font-bold">
+                    Supprimer
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-secondary rounded-lg border border-gray-700">
+        <i data-lucide="scroll" class="w-16 h-16 text-gray-600 mx-auto mb-4"></i>
+        <p class="text-xl text-gray-400 mb-4">Aucun script personnalisé</p>
+        <button onclick="showCreateScriptModal()" class="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold">
+            Créer votre premier script
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Création de Script -->
+<div id="createScriptModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-secondary rounded-lg p-8 max-w-6xl w-full mx-4 border border-gray-700 my-8">
+        <h2 class="text-3xl font-bold mb-6">Nouveau Script Personnalisé</h2>
+        
+        <form method="POST" action="{{ url_for('admin.create_script') }}">
+            <!-- Nom et description -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Nom du Script *</label>
+                <input type="text" name="name" required 
+                       class="w-full px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 text-white"
+                       placeholder="Mon Script Custom">
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Description</label>
+                <textarea name="description" rows="2"
+                          class="w-full px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 text-white"
+                          placeholder="Description optionnelle..."></textarea>
+            </div>
+
+            <!-- Sélection des personnages -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-4">Personnages Inclus *</label>
+                
+                <!-- Éditions -->
+                <div class="mb-4">
+                    <label class="block text-xs text-gray-400 mb-2">Édition source :</label>
+                    <select id="editionFilter" onchange="filterCharactersByEdition()" 
+                            class="px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 text-white">
+                        <option value="">Toutes les éditions</option>
+                        {% for edition in editions %}
+                        <option value="{{ edition.id }}">{{ edition.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Liste de personnages avec checkboxes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto bg-tertiary p-4 rounded-lg">
+                    {% for edition in editions %}
+                        {% for char_type, type_name, color in [
+                            ('townsfolk', 'Villageois', 'blue'),
+                            ('outsider', 'Étrangers', 'cyan'),
+                            ('minion', 'Sbires', 'orange'),
+                            ('demon', 'Démons', 'red')
+                        ] %}
+                            {% set chars = characters | selectattr('edition_id', 'equalto', edition.id) | selectattr('character_type', 'equalto', char_type) | list %}
+                            {% if chars %}
+                                <div class="edition-{{ edition.id }} mb-4">
+                                    <h4 class="font-bold text-sm text-{{ color }}-400 mb-2">{{ type_name }} - {{ edition.name }}</h4>
+                                    {% for character in chars %}
+                                    <label class="flex items-center space-x-2 p-2 hover:bg-gray-700 rounded cursor-pointer">
+                                        <input type="checkbox" name="characters[]" value="{{ character.id }}" 
+                                               class="w-4 h-4 character-checkbox">
+                                        <span class="text-sm">{{ character.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-2">
+                    <span id="selectedCount">0</span> personnages sélectionnés
+                </p>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex space-x-4">
+                <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold">
+                    Créer le Script
+                </button>
+                <button type="button" onclick="closeCreateScriptModal()" 
+                        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold">
+                    Annuler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showCreateScriptModal() {
+    document.getElementById('createScriptModal').classList.remove('hidden');
+    updateSelectedCount();
+}
+
+function closeCreateScriptModal() {
+    document.getElementById('createScriptModal').classList.add('hidden');
+}
+
+function filterCharactersByEdition() {
+    const editionId = document.getElementById('editionFilter').value;
+    const allEditions = document.querySelectorAll('[class*="edition-"]');
+    
+    allEditions.forEach(div => {
+        if (!editionId || div.classList.contains(`edition-${editionId}`)) {
+            div.classList.remove('hidden');
+        } else {
+            div.classList.add('hidden');
+        }
+    });
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.character-checkbox:checked');
+    document.getElementById('selectedCount').textContent = checkboxes.length;
+}
+
+// Update count on checkbox change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('character-checkbox')) {
+        updateSelectedCount();
+    }
+});
+
+function viewScript(scriptId) {
+    window.location.href = `/admin/scripts/${scriptId}`;
+}
+
+function deleteScript(scriptId) {
+    if (confirm('Confirmer la suppression de ce script ?')) {
+        // TODO: Implémenter la suppression
+        alert('Fonctionnalité à venir');
+    }
+}
+</script>
+{% endblock %}
+

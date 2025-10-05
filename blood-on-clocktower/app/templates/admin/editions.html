@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Éditions - Blood on the Clocktower{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8">Éditions</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for edition in editions %}
+        <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold">{{ edition.name }}</h2>
+                <span class="px-2 py-1 text-xs rounded {% if edition.is_active %}bg-green-600{% else %}bg-gray-600{% endif %}">
+                    {% if edition.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+            
+            <p class="text-sm text-gray-400 mb-4">{{ edition.description or 'Aucune description' }}</p>
+            
+            <div class="flex items-center text-sm mb-4">
+                <span class="text-gray-500 mr-2">Difficulté :</span>
+                <div class="flex">
+                    {% for i in range(1, 4) %}
+                        <i data-lucide="star" class="w-4 h-4 {% if i <= edition.difficulty_level %}text-yellow-500{% else %}text-gray-600{% endif %}"></i>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="text-sm text-gray-500">
+                <strong>Personnages :</strong> {{ edition.characters.count() }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

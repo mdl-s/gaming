@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Partie - Blood on the Clocktower{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8">Créer une Nouvelle Partie</h1>
+
+        <form method="POST" class="bg-secondary rounded-lg p-8 border border-gray-700">
+            <!-- Nom de la partie -->
+            <div class="mb-6">
+                <label for="game_name" class="block text-sm font-medium mb-2">
+                    Nom de la Partie *
+                </label>
+                <input 
+                    type="text" 
+                    id="game_name" 
+                    name="game_name" 
+                    required
+                    class="w-full px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-red-500 text-white"
+                    placeholder="ex: Soirée du 5 octobre 2025"
+                >
+            </div>
+
+            <!-- Édition -->
+            <div class="mb-6">
+                <label for="edition_id" class="block text-sm font-medium mb-2">
+                    Édition *
+                </label>
+                <select 
+                    id="edition_id" 
+                    name="edition_id" 
+                    required
+                    class="w-full px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-red-500 text-white"
+                >
+                    <option value="">Sélectionnez une édition</option>
+                    {% for edition in editions %}
+                    <option value="{{ edition.id }}">
+                        {{ edition.name }} (Difficulté: {{ edition.difficulty_level }}/3)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Nombre de joueurs -->
+            <div class="mb-8">
+                <label for="player_count" class="block text-sm font-medium mb-2">
+                    Nombre de Joueurs *
+                </label>
+                <select 
+                    id="player_count" 
+                    name="player_count" 
+                    required
+                    class="w-full px-4 py-2 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-red-500 text-white"
+                    onchange="updateDistribution()"
+                >
+                    <option value="">Sélectionnez le nombre</option>
+                    {% for count in range(5, 16) %}
+                    <option value="{{ count }}">{{ count }} joueurs</option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Affichage de la distribution -->
+                <div id="distribution" class="mt-4 p-4 bg-tertiary rounded-lg hidden">
+                    <p class="text-sm font-medium mb-2">Distribution des rôles :</p>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                            <span id="townsfolk-count">-</span> Villageois
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-cyan-500 rounded-full mr-2"></span>
+                            <span id="outsider-count">-</span> Étrangers
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                            <span id="minion-count">-</span> Sbires
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                            <span id="demon-count">-</span> Démon
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex space-x-4">
+                <button 
+                    type="submit" 
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                    Créer la Partie
+                </button>
+                <a 
+                    href="{{ url_for('main.index') }}" 
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg text-center transition-colors"
+                >
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Distribution des rôles selon le nombre de joueurs
+const distributions = {
+    5: {townsfolk: 3, outsider: 0, minion: 1, demon: 1},
+    6: {townsfolk: 3, outsider: 1, minion: 1, demon: 1},
+    7: {townsfolk: 5, outsider: 0, minion: 1, demon: 1},
+    8: {townsfolk: 5, outsider: 1, minion: 1, demon: 1},
+    9: {townsfolk: 5, outsider: 2, minion: 1, demon: 1},
+    10: {townsfolk: 7, outsider: 0, minion: 2, demon: 1},
+    11: {townsfolk: 7, outsider: 1, minion: 2, demon: 1},
+    12: {townsfolk: 7, outsider: 2, minion: 2, demon: 1},
+    13: {townsfolk: 9, outsider: 0, minion: 3, demon: 1},
+    14: {townsfolk: 9, outsider: 1, minion: 3, demon: 1},
+    15: {townsfolk: 9, outsider: 2, minion: 3, demon: 1}
+};
+
+function updateDistribution() {
+    const count = parseInt(document.getElementById('player_count').value);
+    const distDiv = document.getElementById('distribution');
+    
+    if (count && distributions[count]) {
+        const dist = distributions[count];
+        document.getElementById('townsfolk-count').textContent = dist.townsfolk;
+        document.getElementById('outsider-count').textContent = dist.outsider;
+        document.getElementById('minion-count').textContent = dist.minion;
+        document.getElementById('demon-count').textContent = dist.demon;
+        distDiv.classList.remove('hidden');
+    } else {
+        distDiv.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}
+

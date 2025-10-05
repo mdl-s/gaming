@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Grimoire - {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <!-- En-tête -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-4xl font-bold mb-2">{{ game.name }}</h1>
+            <p class="text-gray-400">
+                {{ game.edition.name }} • 
+                {% if game.current_phase == 'night' %}
+                    🌙 Nuit {{ game.current_night_number }}
+                {% else %}
+                    ☀️ Jour {{ game.current_day_number }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{{ url_for('grimoire.history', game_id=game.id) }}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold">
+                📜 Historique
+            </a>
+            <form method="POST" action="{{ url_for('grimoire.next_phase', game_id=game.id) }}" class="inline">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold">
+                    {% if game.current_phase == 'night' %}
+                        Passer au Jour →
+                    {% else %}
+                        Passer à la Nuit →
+                    {% endif %}
+                </button>
+            </form>
+            <button onclick="showEndGameModal()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold">
+                Terminer la Partie
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats rapides -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+            <div class="text-2xl font-bold text-green-400">
+                {{ players | selectattr('is_alive') | list | length }}
+            </div>
+            <div class="text-sm text-gray-400">Joueurs Vivants</div>
+        </div>
+        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+            <div class="text-2xl font-bold text-gray-400">
+                {{ players | rejectattr('is_alive') | list | length }}
+            </div>
+            <div class="text-sm text-gray-400">Joueurs Morts</div>
+        </div>
+        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+            <div class="text-2xl font-bold text-blue-400">
+                {{ players | selectattr('alignment', 'equalto', 'good') | list | length }}
+            </div>
+            <div class="text-sm text-gray-400">Camp Bon</div>
+        </div>
+        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+            <div class="text-2xl font-bold text-red-400">
+                {{ players | selectattr('alignment', 'equalto', 'evil') | list | length }}
+            </div>
+            <div class="text-sm text-gray-400">Camp Maléfique</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Cercle des joueurs -->
+        <div class="lg:col-span-2">
+            <h2 class="text-2xl font-bold mb-4">Cercle des Joueurs</h2>
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {% for player in players %}
+                    <div class="bg-tertiary rounded-lg p-4 border-2 
+                        {% if player.is_alive %}
+                            {% if player.alignment == 'good' %}border-blue-500{% else %}border-red-500{% endif %}
+                        {% else %}border-gray-600{% endif %}
+                        relative cursor-pointer hover:scale-105 transition-transform"
+                        onclick="showPlayerModal({{ player.id }})">
+                        
+                        <!-- Badge position -->
+                        <div class="absolute top-2 left-2 bg-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            {{ player.seat_position }}
+                        </div>
+                        
+                        <!-- États -->
+                        <div class="absolute top-2 right-2 flex space-x-1">
+                            {% if not player.is_alive %}
+                                <span class="text-xs">💀</span>
+                            {% endif %}
+                            {% if player.is_poisoned %}
+                                <span class="text-xs">🧪</span>
+                            {% endif %}
+                            {% if player.is_drunk %}
+                                <span class="text-xs">🍺</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Contenu -->
+                        <div class="mt-8 text-center">
+                            <h3 class="font-bold text-lg mb-1 {% if not player.is_alive %}text-gray-500{% endif %}">
+                                {{ player.name }}
+                            </h3>
+                            <p class="text-sm text-gray-400 mb-1">{{ player.character.name }}</p>
+                            <p class="text-xs 
+                                {% if player.character.character_type == 'townsfolk' %}text-blue-400
+                                {% elif player.character.character_type == 'outsider' %}text-cyan-400
+                                {% elif player.character.character_type == 'minion' %}text-orange-400
+                                {% else %}text-red-400{% endif %}">
+                                {{ player.character.character_type | upper }}
+                            </p>
+                        </div>
+                        
+                        <!-- Actions rapides -->
+                        <div class="mt-3 flex space-x-2">
+                            {% if player.is_alive %}
+                                <button onclick="event.stopPropagation(); killPlayer({{ player.id }})" 
+                                    class="flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                    Tuer
+                                </button>
+                            {% else %}
+                                <button onclick="event.stopPropagation(); revivePlayer({{ player.id }})" 
+                                    class="flex-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    Ressusciter
+                                </button>
+                            {% endif %}
+                            <button onclick="event.stopPropagation(); togglePoison({{ player.id }})" 
+                                class="flex-1 {% if player.is_poisoned %}bg-yellow-600{% else %}bg-gray-600{% endif %} hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs">
+                                Poison
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordre de nuit -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Ordre de Nuit</h2>
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                {% if game.current_phase == 'night' %}
+                    <p class="text-sm text-gray-400 mb-4">
+                        {% if game.current_night_number == 1 %}
+                            Première nuit - Ordre d'éveil
+                        {% else %}
+                            Autres nuits - Ordre d'éveil
+                        {% endif %}
+                    </p>
+                    <div class="space-y-2">
+                        {% for character in night_order %}
+                        <div class="bg-tertiary rounded p-3 border border-gray-600">
+                            <div class="font-bold text-sm">{{ character.name }}</div>
+                            <div class="text-xs text-gray-400 mt-1">{{ character.ability_description[:60] }}...</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-400">
+                        L'ordre de nuit sera affiché lors de la prochaine nuit.
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Nominations (jour uniquement) -->
+            {% if game.current_phase == 'day' %}
+            <h2 class="text-2xl font-bold mt-6 mb-4">Nominations du Jour</h2>
+            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+                <button onclick="showNominationModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-bold mb-4">
+                    + Nouvelle Nomination
+                </button>
+                
+                <!-- Liste des nominations d'aujourd'hui -->
+                {% set today_nominations = game.day_actions.filter_by(day_number=game.current_day_number, action_type='nomination').all() %}
+                {% if today_nominations %}
+                <div class="space-y-3 mt-4">
+                    {% for nomination in today_nominations %}
+                    <div class="bg-tertiary rounded-lg p-4 border border-gray-600">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="font-bold text-purple-400">{{ nomination.nominator.name }}</span>
+                                <span class="text-gray-400"> nomine </span>
+                                <span class="font-bold text-red-400">{{ nomination.nominee.name }}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">{{ nomination.timestamp.strftime('%H:%M') }}</span>
+                        </div>
+                        
+                        {% if nomination.vote_count is not none %}
+                            <div class="flex items-center space-x-4 text-sm mt-2">
+                                <span class="text-green-400">✓ {{ nomination.vote_count }} pour</span>
+                                <span class="text-red-400">✗ {{ nomination.votes_against or 0 }} contre</span>
+                                {% if nomination.executed %}
+                                    <span class="bg-red-600 px-2 py-1 rounded text-xs font-bold">EXÉCUTÉ</span>
+                                {% else %}
+                                    <span class="bg-gray-600 px-2 py-1 rounded text-xs">Non exécuté</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <button onclick="showVoteModal({{ nomination.id }}, '{{ nomination.nominator.name }}', '{{ nomination.nominee.name }}')" 
+                                    class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm font-bold">
+                                📊 Enregistrer les Votes
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-400 text-center mt-4">Aucune nomination pour l'instant</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Inclure les modals -->
+{% include 'grimoire/nomination_modal.html' %}
+{% include 'grimoire/vote_modal.html' %}
+
+<!-- Modal détails joueur -->
+<div id="playerModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-secondary rounded-lg p-8 max-w-2xl w-full mx-4 border border-gray-700">
+        <div id="playerModalContent"></div>
+    </div>
+</div>
+
+<!-- Modal fin de partie -->
+<div id="endGameModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-secondary rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700">
+        <h2 class="text-2xl font-bold mb-4">Terminer la Partie</h2>
+        <p class="text-gray-400 mb-6">Quel camp a gagné ?</p>
+        <form method="POST" action="{{ url_for('grimoire.end_game', game_id=game.id) }}">
+            <div class="space-y-3 mb-6">
+                <button type="submit" name="winner" value="good" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold">
+                    👑 Le Bien a Gagné
+                </button>
+                <button type="submit" name="winner" value="evil" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold">
+                    💀 Le Mal a Gagné
+                </button>
+            </div>
+            <button type="button" onclick="closeEndGameModal()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
+                Annuler
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function killPlayer(playerId) {
+    if (confirm('Confirmer la mort de ce joueur ?')) {
+        fetch(`/grimoire/{{ game.id }}/player/${playerId}/kill`, {method: 'POST'})
+            .then(r => r.json())
+            .then(() => location.reload());
+    }
+}
+
+function revivePlayer(playerId) {
+    fetch(`/grimoire/{{ game.id }}/player/${playerId}/revive`, {method: 'POST'})
+        .then(r => r.json())
+        .then(() => location.reload());
+}
+
+function togglePoison(playerId) {
+    fetch(`/grimoire/{{ game.id }}/player/${playerId}/toggle-poison`, {method: 'POST'})
+        .then(r => r.json())
+        .then(() => location.reload());
+}
+
+function showPlayerModal(playerId) {
+    // TODO: Implémenter modal détails
+    window.location.href = `/grimoire/{{ game.id }}/player/${playerId}`;
+}
+
+function showEndGameModal() {
+    document.getElementById('endGameModal').classList.remove('hidden');
+}
+
+function closeEndGameModal() {
+    document.getElementById('endGameModal').classList.add('hidden');
+}
+</script>
+{% endblock %}
+

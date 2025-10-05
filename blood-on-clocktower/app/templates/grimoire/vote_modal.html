@@ -1,0 +1,106 @@
+<!-- Modal pour enregistrer les votes -->
+<div id="voteModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-secondary rounded-lg p-8 max-w-3xl w-full mx-4 border border-gray-700">
+        <h2 class="text-3xl font-bold mb-4">Enregistrer les Votes</h2>
+        <p class="text-gray-400 mb-6">Nomination : <span id="voteModalNomination" class="text-white font-bold"></span></p>
+        
+        <form id="voteForm">
+            <input type="hidden" id="nominationId" name="nomination_id">
+            
+            <!-- Compteur de votes -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="bg-tertiary rounded-lg p-6 border border-green-700">
+                    <label class="block text-sm font-medium mb-3 text-green-400">Votes POUR</label>
+                    <input type="number" id="votesFor" name="vote_count" min="0" value="0" required
+                           class="w-full px-4 py-3 bg-primary border border-gray-600 rounded-lg focus:outline-none focus:border-green-500 text-white text-3xl text-center font-bold">
+                </div>
+                
+                <div class="bg-tertiary rounded-lg p-6 border border-red-700">
+                    <label class="block text-sm font-medium mb-3 text-red-400">Votes CONTRE</label>
+                    <input type="number" id="votesAgainst" name="votes_against" min="0" value="0" required
+                           class="w-full px-4 py-3 bg-primary border border-gray-600 rounded-lg focus:outline-none focus:border-red-500 text-white text-3xl text-center font-bold">
+                </div>
+            </div>
+
+            <!-- Info : majorité requise -->
+            <div class="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-200">
+                    ℹ️ <strong>Majorité requise :</strong> {{ ((players|selectattr('is_alive')|list|length) / 2)|round|int + 1 }} votes 
+                    (plus de 50% des {{ players|selectattr('is_alive')|list|length }} joueurs vivants)
+                </p>
+            </div>
+
+            <!-- Exécution ? -->
+            <div class="mb-6">
+                <label class="flex items-center space-x-3 cursor-pointer bg-tertiary rounded-lg p-4 border border-gray-600 hover:border-red-500">
+                    <input type="checkbox" id="executed" name="executed" class="w-6 h-6 rounded">
+                    <span class="text-lg font-medium">Le nominé a été exécuté</span>
+                </label>
+            </div>
+
+            <!-- Notes optionnelles -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Notes (optionnel)</label>
+                <textarea id="voteNotes" name="notes" rows="3" 
+                          class="w-full px-4 py-3 bg-tertiary border border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 text-white"
+                          placeholder="Remarques sur ce vote..."></textarea>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex space-x-4">
+                <button type="button" onclick="submitVote()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg">
+                    ✅ Enregistrer les Votes
+                </button>
+                <button type="button" onclick="closeVoteModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold">
+                    Annuler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showVoteModal(nominationId, nominatorName, nomineeName) {
+    document.getElementById('nominationId').value = nominationId;
+    document.getElementById('voteModalNomination').textContent = nominatorName + ' nomine ' + nomineeName;
+    document.getElementById('voteModal').classList.remove('hidden');
+}
+
+function closeVoteModal() {
+    document.getElementById('voteModal').classList.add('hidden');
+}
+
+function submitVote() {
+    const nominationId = document.getElementById('nominationId').value;
+    const voteCount = document.getElementById('votesFor').value;
+    const votesAgainst = document.getElementById('votesAgainst').value;
+    const executed = document.getElementById('executed').checked;
+    const notes = document.getElementById('voteNotes').value;
+    
+    fetch(`/grimoire/{{ game.id }}/vote/${nominationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            vote_count: parseInt(voteCount),
+            votes_against: parseInt(votesAgainst),
+            executed: executed,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'enregistrement : ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'enregistrement des votes');
+    });
+}
+</script>
+
