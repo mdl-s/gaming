@@ -122,7 +122,7 @@
     {% endwith %}
 
     <!-- Contenu principal -->
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main class="{% if not request.endpoint or 'grimoire' not in request.endpoint %}max-w-7xl mx-auto py-6 sm:px-6 lg:px-8{% endif %}">
         {% block content %}{% endblock %}
     </main>
 

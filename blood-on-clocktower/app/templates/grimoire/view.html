@@ -3,76 +3,74 @@
 {% block title %}Grimoire - {{ game.name }}{% endblock %}
 
 {% block content %}
-<div class="px-4 py-8">
-    <!-- En-tête -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-4xl font-bold mb-2">{{ game.name }}</h1>
-            <p class="text-gray-400">
-                {{ game.edition.name }} • 
-                {% if game.current_phase == 'night' %}
-                    🌙 Nuit {{ game.current_night_number }}
-                {% else %}
-                    ☀️ Jour {{ game.current_day_number }}
-                {% endif %}
-            </p>
-        </div>
-        <div class="flex space-x-2">
-            <a href="{{ url_for('grimoire.history', game_id=game.id) }}" 
-               class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold">
-                📜 Historique
-            </a>
-            <form method="POST" action="{{ url_for('grimoire.next_phase', game_id=game.id) }}" class="inline">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold">
+<div class="min-h-screen bg-primary">
+    <!-- En-tête fixe -->
+    <div class="bg-secondary border-b border-gray-700 px-6 py-4 sticky top-0 z-10">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold mb-1">{{ game.name }}</h1>
+                <p class="text-gray-400 text-sm">
+                    {{ game.edition.name }} • 
                     {% if game.current_phase == 'night' %}
-                        Passer au Jour →
+                        🌙 Nuit {{ game.current_night_number }}
                     {% else %}
-                        Passer à la Nuit →
+                        ☀️ Jour {{ game.current_day_number }}
                     {% endif %}
+                </p>
+            </div>
+            <div class="flex space-x-2">
+                <a href="{{ url_for('grimoire.history', game_id=game.id) }}" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-bold text-sm">
+                    📜 Historique
+                </a>
+                <form method="POST" action="{{ url_for('grimoire.next_phase', game_id=game.id) }}" class="inline" id="nextPhaseForm">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm">
+                        {% if game.current_phase == 'night' %}
+                            ☀️ Passer au Jour
+                        {% else %}
+                            🌙 Passer à la Nuit
+                        {% endif %}
+                    </button>
+                </form>
+                <button onclick="showEndGameModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm">
+                    🏁 Terminer
                 </button>
-            </form>
-            <button onclick="showEndGameModal()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold">
-                Terminer la Partie
-            </button>
+            </div>
         </div>
     </div>
 
     <!-- Stats rapides -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
-            <div class="text-2xl font-bold text-green-400">
-                {{ players | selectattr('is_alive') | list | length }}
+    <div class="px-6 py-4 bg-secondary border-b border-gray-700">
+        <div class="grid grid-cols-4 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-400">{{ players | selectattr('is_alive') | list | length }}</div>
+                <div class="text-xs text-gray-400">Vivants</div>
             </div>
-            <div class="text-sm text-gray-400">Joueurs Vivants</div>
-        </div>
-        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
-            <div class="text-2xl font-bold text-gray-400">
-                {{ players | rejectattr('is_alive') | list | length }}
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-400">{{ players | rejectattr('is_alive') | list | length }}</div>
+                <div class="text-xs text-gray-400">Morts</div>
             </div>
-            <div class="text-sm text-gray-400">Joueurs Morts</div>
-        </div>
-        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
-            <div class="text-2xl font-bold text-blue-400">
-                {{ players | selectattr('alignment', 'equalto', 'good') | list | length }}
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-400">{{ players | selectattr('alignment', 'equalto', 'good') | list | length }}</div>
+                <div class="text-xs text-gray-400">Bon</div>
             </div>
-            <div class="text-sm text-gray-400">Camp Bon</div>
-        </div>
-        <div class="bg-secondary rounded-lg p-4 border border-gray-700">
-            <div class="text-2xl font-bold text-red-400">
-                {{ players | selectattr('alignment', 'equalto', 'evil') | list | length }}
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-400">{{ players | selectattr('alignment', 'equalto', 'evil') | list | length }}</div>
+                <div class="text-xs text-gray-400">Maléfique</div>
             </div>
-            <div class="text-sm text-gray-400">Camp Maléfique</div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Cercle des joueurs -->
-        <div class="lg:col-span-2">
-            <h2 class="text-2xl font-bold mb-4">Cercle des Joueurs</h2>
-            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <!-- Layout 3 colonnes pleine largeur -->
+    <div class="grid grid-cols-12 gap-4 p-4">
+        
+        <!-- COLONNE GAUCHE : Cercle des Joueurs (5/12) -->
+        <div class="col-span-12 lg:col-span-5">
+            <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4">🎭 Cercle des Joueurs</h2>
+                <div class="grid grid-cols-2 gap-3">
                     {% for player in players %}
-                    <div class="bg-tertiary rounded-lg p-4 border-2 
+                    <div class="bg-tertiary rounded-lg p-3 border-2 
                         {% if player.is_alive %}
                             {% if player.alignment == 'good' %}border-blue-500{% else %}border-red-500{% endif %}
                         {% else %}border-gray-600{% endif %}
@@ -86,20 +84,14 @@
                         
                         <!-- États -->
                         <div class="absolute top-2 right-2 flex space-x-1">
-                            {% if not player.is_alive %}
-                                <span class="text-xs">💀</span>
-                            {% endif %}
-                            {% if player.is_poisoned %}
-                                <span class="text-xs">🧪</span>
-                            {% endif %}
-                            {% if player.is_drunk %}
-                                <span class="text-xs">🍺</span>
-                            {% endif %}
+                            {% if not player.is_alive %}<span class="text-xs">💀</span>{% endif %}
+                            {% if player.is_poisoned %}<span class="text-xs">🧪</span>{% endif %}
+                            {% if player.is_drunk %}<span class="text-xs">🍺</span>{% endif %}
                         </div>
                         
                         <!-- Contenu -->
                         <div class="mt-8 text-center">
-                            <h3 class="font-bold text-lg mb-1 {% if not player.is_alive %}text-gray-500{% endif %}">
+                            <h3 class="font-bold text-base mb-1 {% if not player.is_alive %}text-gray-500{% endif %}">
                                 {{ player.name }}
                             </h3>
                             <p class="text-sm text-gray-400 mb-1">{{ player.character.name }}</p>
@@ -136,69 +128,142 @@
             </div>
         </div>
 
-        <!-- Ordre de nuit -->
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Ordre de Nuit</h2>
-            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
+        <!-- COLONNE CENTRE : Ordre de Nuit / Nominations (4/12) -->
+        <div class="col-span-12 lg:col-span-4">
+            <div class="bg-secondary rounded-lg p-4 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4">
+                    {% if game.current_phase == 'night' %}
+                        🌙 Ordre de Nuit {{ game.current_night_number }}
+                    {% else %}
+                        📋 Nominations
+                    {% endif %}
+                </h2>
+                
                 {% if game.current_phase == 'night' %}
-                    <p class="text-sm text-gray-400 mb-4">
-                        {% if game.current_night_number == 1 %}
-                            Première nuit - Ordre d'éveil
-                        {% else %}
-                            Autres nuits - Ordre d'éveil
-                        {% endif %}
-                    </p>
-                    <div class="space-y-2">
-                        {% for character in night_order %}
-                        <div class="bg-tertiary rounded p-3 border border-gray-600">
-                            <div class="font-bold text-sm">{{ character.name }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ character.ability_description[:60] }}...</div>
+                <!-- Ordre de Nuit Détaillé -->
+                <p class="text-xs text-gray-400 mb-3">
+                    {% if game.current_night_number == 1 %}
+                        ⭐ Première nuit - Ordre spécial de setup
+                    {% else %}
+                        🔄 Autres nuits - Ordre standard
+                    {% endif %}
+                </p>
+                
+                <div class="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                    {% for character in night_order %}
+                    {% set char_players = players|selectattr('character_id', 'equalto', character.id)|selectattr('is_alive')|list %}
+                    {% if char_players %}
+                    <label class="block bg-tertiary rounded-lg p-3 border-2 border-gray-600 hover:border-purple-500 cursor-pointer transition-all">
+                        <div class="flex items-start space-x-3">
+                            <input type="checkbox" class="night-checklist w-5 h-5 mt-1 flex-shrink-0" onchange="updateProgress()">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold text-purple-300 text-sm">{{ character.name }}</span>
+                                    <span class="text-xs px-2 py-0.5 bg-purple-900 rounded">
+                                        {% if game.current_night_number == 1 %}#{{ character.first_night }}{% else %}#{{ character.other_nights }}{% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="text-xs text-gray-300 mb-2 leading-tight">
+                                    {{ character.ability_description }}
+                                </div>
+                                
+                                <!-- Joueurs concernés -->
+                                <div class="flex flex-wrap gap-1 mb-2">
+                                    {% for player in char_players %}
+                                    <span class="text-xs px-2 py-0.5 bg-purple-800/50 rounded font-medium">
+                                        {{ player.name }} (#{{ player.seat_position }})
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Rappels spécifiques -->
+                                {% if character.name in ['Imp', 'Poisoner', 'Fortune Teller', 'Empath', 'Monk', 'Ravenkeeper', 'Washerwoman', 'Librarian', 'Investigator', 'Chef', 'Undertaker'] %}
+                                <div class="text-xs text-yellow-400 bg-yellow-900/20 rounded px-2 py-1 mt-1">
+                                    💡 
+                                    {% if character.name == 'Imp' %}
+                                        Choisit qui tuer. S'il se tue → Sbire devient Imp
+                                    {% elif character.name == 'Poisoner' %}
+                                        Joueur empoisonné = fausses infos (ne sait pas qu'il l'est)
+                                    {% elif character.name == 'Fortune Teller' %}
+                                        A 1 Faux Positif (Bon joueur semble Démon)
+                                    {% elif character.name == 'Empath' %}
+                                        Compte voisins VIVANTS maléfiques (0, 1 ou 2)
+                                    {% elif character.name == 'Monk' %}
+                                        Joueur protégé = immortel vs Démon cette nuit uniquement
+                                    {% elif character.name == 'Ravenkeeper' %}
+                                        Seulement si mort CETTE nuit → Choisit qui inspecter
+                                    {% elif character.name == 'Washerwoman' %}
+                                        Montre 2 joueurs, dit : "L'un d'eux est [ce Townsfolk]"
+                                    {% elif character.name == 'Librarian' %}
+                                        Montre 2 joueurs, dit : "L'un d'eux est [ce Outsider]"
+                                    {% elif character.name == 'Investigator' %}
+                                        Montre 2 joueurs, dit : "L'un d'eux est [ce Minion]"
+                                    {% elif character.name == 'Chef' %}
+                                        Compte paires de Maléfiques adjacents
+                                    {% elif character.name == 'Undertaker' %}
+                                        Apprend qui a été exécuté aujourd'hui
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-sm text-gray-400">
-                        L'ordre de nuit sera affiché lors de la prochaine nuit.
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if not night_order or night_order|length == 0 %}
+                    <p class="text-sm text-gray-400 text-center py-8">
+                        Aucune action de nuit active
                     </p>
-                {% endif %}
-            </div>
-
-            <!-- Nominations (jour uniquement) -->
-            {% if game.current_phase == 'day' %}
-            <h2 class="text-2xl font-bold mt-6 mb-4">Nominations du Jour</h2>
-            <div class="bg-secondary rounded-lg p-6 border border-gray-700">
-                <button onclick="showNominationModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-bold mb-4">
+                    {% endif %}
+                </div>
+                
+                <!-- Progression -->
+                <div class="mt-4 bg-gray-800 rounded-lg p-3">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Progression</span>
+                        <span id="progressText">0 / {{ night_order|length }}</span>
+                    </div>
+                    <div class="bg-gray-700 rounded-full h-2">
+                        <div id="progressBar" class="bg-purple-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                {% else %}
+                <!-- Nominations (Jour) -->
+                <button onclick="showNominationModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold mb-4">
                     + Nouvelle Nomination
                 </button>
                 
                 <!-- Liste des nominations d'aujourd'hui -->
                 {% set today_nominations = game.day_actions.filter_by(day_number=game.current_day_number, action_type='nomination').all() %}
                 {% if today_nominations %}
-                <div class="space-y-3 mt-4">
+                <div class="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
                     {% for nomination in today_nominations %}
                     <div class="bg-tertiary rounded-lg p-4 border border-gray-600">
                         <div class="flex justify-between items-start mb-2">
                             <div>
                                 <span class="font-bold text-purple-400">{{ nomination.nominator.name }}</span>
-                                <span class="text-gray-400"> nomine </span>
+                                <span class="text-gray-400 text-sm"> nomine </span>
                                 <span class="font-bold text-red-400">{{ nomination.nominee.name }}</span>
                             </div>
                             <span class="text-xs text-gray-500">{{ nomination.timestamp.strftime('%H:%M') }}</span>
                         </div>
                         
                         {% if nomination.vote_count is not none %}
-                            <div class="flex items-center space-x-4 text-sm mt-2">
-                                <span class="text-green-400">✓ {{ nomination.vote_count }} pour</span>
-                                <span class="text-red-400">✗ {{ nomination.votes_against or 0 }} contre</span>
+                            <div class="flex items-center space-x-3 text-sm mt-2">
+                                <span class="text-green-400">✓ {{ nomination.vote_count }}</span>
+                                <span class="text-red-400">✗ {{ nomination.votes_against or 0 }}</span>
                                 {% if nomination.executed %}
-                                    <span class="bg-red-600 px-2 py-1 rounded text-xs font-bold">EXÉCUTÉ</span>
+                                    <span class="bg-red-600 px-2 py-1 rounded text-xs font-bold">💀 EXÉCUTÉ</span>
                                 {% else %}
-                                    <span class="bg-gray-600 px-2 py-1 rounded text-xs">Non exécuté</span>
+                                    <span class="bg-gray-600 px-2 py-1 rounded text-xs">Survécu</span>
                                 {% endif %}
                             </div>
                         {% else %}
                             <button onclick="showVoteModal({{ nomination.id }}, '{{ nomination.nominator.name }}', '{{ nomination.nominee.name }}')" 
-                                    class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm font-bold">
+                                    class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm font-bold w-full">
                                 📊 Enregistrer les Votes
                             </button>
                         {% endif %}
@@ -206,24 +271,187 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-sm text-gray-400 text-center mt-4">Aucune nomination pour l'instant</p>
+                <p class="text-sm text-gray-400 text-center py-8">Aucune nomination</p>
+                {% endif %}
                 {% endif %}
             </div>
-            {% endif %}
+        </div>
+
+        <!-- COLONNE DROITE : Aide Conteur Contextuelle (3/12) -->
+        <div class="col-span-12 lg:col-span-3">
+            <div class="bg-secondary rounded-lg p-4 border border-gray-700 sticky top-24">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i data-lucide="help-circle" class="w-5 h-5 mr-2 text-blue-400"></i>
+                    Aide Conteur
+                </h2>
+                
+                {% if game.current_phase == 'night' %}
+                <!-- Aide Nuit -->
+                <div class="space-y-3">
+                    <div class="bg-purple-900/30 border border-purple-700 rounded-lg p-3">
+                        <h3 class="font-bold text-sm text-purple-400 mb-2">
+                            🌙 Nuit {{ game.current_night_number }}
+                            {% if game.current_night_number == 1 %}(Première){% endif %}
+                        </h3>
+                        <p class="text-xs text-gray-300">
+                            Réveillez chaque personnage dans l'ordre ci-contre. Cochez au fur et à mesure.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-tertiary rounded-lg p-3">
+                        <h4 class="font-bold text-sm mb-2">📝 Checklist Nuit</h4>
+                        <ul class="text-xs space-y-1 text-gray-300">
+                            <li>✓ Vérifier qui est vivant</li>
+                            <li>✓ Suivre l'ordre précis (numéros)</li>
+                            <li>✓ Noter les choix dans vos notes</li>
+                            <li>✓ Donner les bonnes infos</li>
+                            <li>✓ Fausses infos si 🧪 ou 🍺</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
+                        <h4 class="font-bold text-sm text-blue-400 mb-2">💡 Rappels Importants</h4>
+                        <ul class="text-xs space-y-1 text-gray-300">
+                            <li>• Empoisonné/ivre <strong>ne sait pas</strong></li>
+                            <li>• Donnez infos cohérentes (pas n'importe quoi)</li>
+                            <li>• Monk protège du Démon seulement</li>
+                            <li>• Imp peut se suicider (Sbire → Imp)</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Rappels par édition -->
+                    {% if game.edition.name == 'Bad Moon Rising' %}
+                    <div class="bg-orange-900/30 border border-orange-700 rounded-lg p-3">
+                        <h4 class="font-bold text-sm text-orange-400 mb-2">⚠️ Spécial BMR</h4>
+                        <ul class="text-xs space-y-1 text-gray-300">
+                            <li>• Morts MULTIPLES possibles</li>
+                            <li>• Shabaloth tue 2/nuit</li>
+                            <li>• Po peut tuer 3 si skip</li>
+                            <li>• Protections actives !</li>
+                        </ul>
+                    </div>
+                    {% elif game.edition.name == 'Sects & Violets' %}
+                    <div class="bg-red-900/30 border border-red-700 rounded-lg p-3">
+                        <h4 class="font-bold text-sm text-red-400 mb-2">🔥 Spécial S&V</h4>
+                        <ul class="text-xs space-y-1 text-gray-300">
+                            <li>• Transformations possibles</li>
+                            <li>• Vortox = infos FAUSSES</li>
+                            <li>• Snake Charmer peut devenir Démon</li>
+                            <li>• Pit-Hag change personnages</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% else %}
+                <!-- Aide Jour -->
+                <div class="space-y-3">
+                    <div class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-3">
+                        <h3 class="font-bold text-sm text-yellow-400 mb-2">☀️ Jour {{ game.current_day_number }}</h3>
+                        <p class="text-xs text-gray-300">
+                            Phase de discussion, nominations et votes
+                        </p>
+                    </div>
+                    
+                    <div class="bg-tertiary rounded-lg p-3">
+                        <h4 class="font-bold text-sm mb-2">📋 Déroulement du Jour</h4>
+                        <ol class="text-xs space-y-1 text-gray-300 list-decimal list-inside">
+                            <li>Annoncez qui est mort</li>
+                            <li>Discussions libres</li>
+                            <li>Nominations (1 par personne)</li>
+                            <li>Votes à main levée</li>
+                            <li>Si majorité → Exécution</li>
+                            <li>Max 1 exécution/jour</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
+                        <h4 class="font-bold text-sm text-blue-400 mb-2">🗳️ Calcul Majorité</h4>
+                        <p class="text-xs text-gray-300 mb-1">
+                            Joueurs vivants : <strong>{{ players|selectattr('is_alive')|list|length }}</strong>
+                        </p>
+                        <p class="text-xs text-gray-300">
+                            Votes requis : <strong class="text-green-400 text-lg">{{ ((players|selectattr('is_alive')|list|length) / 2)|round(0, 'ceil')|int }}</strong>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            (Plus de 50% des vivants)
+                        </p>
+                    </div>
+                    
+                    <!-- Rappels rôles spéciaux jour -->
+                    {% set has_virgin = players|selectattr('character.name', 'equalto', 'Virgin')|selectattr('is_alive')|list|length > 0 %}
+                    {% set has_butler = players|selectattr('character.name', 'equalto', 'Butler')|selectattr('is_alive')|list|length > 0 %}
+                    {% set has_slayer = players|selectattr('character.name', 'equalto', 'Slayer')|selectattr('is_alive')|list|length > 0 %}
+                    
+                    {% if has_virgin or has_butler or has_slayer %}
+                    <div class="space-y-2">
+                        {% if has_virgin %}
+                        <div class="bg-red-900/30 border border-red-700 rounded-lg p-2">
+                            <h4 class="font-bold text-xs text-red-400 mb-1">⚠️ Virgin en jeu</h4>
+                            <p class="text-xs text-gray-300">
+                                Si nominée 1ère fois par Townsfolk → Nominateur exécuté (pas de vote)
+                            </p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if has_butler %}
+                        <div class="bg-cyan-900/30 border border-cyan-700 rounded-lg p-2">
+                            <h4 class="font-bold text-xs text-cyan-400 mb-1">🤝 Butler en jeu</h4>
+                            <p class="text-xs text-gray-300">
+                                Vote seulement si son Maître vote
+                            </p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if has_slayer %}
+                        <div class="bg-orange-900/30 border border-orange-700 rounded-lg p-2">
+                            <h4 class="font-bold text-xs text-orange-400 mb-1">⚔️ Slayer en jeu</h4>
+                            <p class="text-xs text-gray-300">
+                                Peut tenter tuer Démon (public, 1 fois)
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Raccourcis (toujours visibles) -->
+                <div class="mt-4 bg-gray-800 rounded-lg p-3">
+                    <h4 class="font-bold text-sm mb-2">⌨️ Actions Rapides</h4>
+                    <div class="space-y-1 text-xs text-gray-300">
+                        <div>• <kbd class="bg-gray-700 px-1 rounded">Clic</kbd> joueur → Détails + notes</div>
+                        <div>• <kbd class="bg-gray-700 px-1 rounded">Tuer</kbd> → Mort + historique</div>
+                        <div>• <kbd class="bg-gray-700 px-1 rounded">Poison</kbd> → 🧪 + historique</div>
+                        <div>• <kbd class="bg-gray-700 px-1 rounded">📜</kbd> → Historique complet</div>
+                    </div>
+                </div>
+                
+                <!-- Infos édition -->
+                <div class="mt-4 bg-gray-800 rounded-lg p-3">
+                    <h4 class="font-bold text-sm mb-2">📚 {{ game.edition.name }}</h4>
+                    <div class="flex items-center space-x-1 mb-2">
+                        {% for i in range(1, 4) %}
+                            <i data-lucide="star" class="w-3 h-3 {% if i <= game.edition.difficulty_level %}text-yellow-500{% else %}text-gray-600{% endif %}"></i>
+                        {% endfor %}
+                        <span class="text-xs text-gray-400 ml-2">
+                            {% if game.edition.difficulty_level == 1 %}Débutant
+                            {% elif game.edition.difficulty_level == 2 %}Intermédiaire
+                            {% else %}Expert{% endif %}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-400">
+                        {{ game.edition.description }}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Inclure les modals -->
-{% include 'grimoire/nomination_modal.html' %}
+<!-- Modals -->
+{% include 'grimoire/nomination_modal_improved.html' %}
 {% include 'grimoire/vote_modal.html' %}
-
-<!-- Modal détails joueur -->
-<div id="playerModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-    <div class="bg-secondary rounded-lg p-8 max-w-2xl w-full mx-4 border border-gray-700">
-        <div id="playerModalContent"></div>
-    </div>
-</div>
 
 <!-- Modal fin de partie -->
 <div id="endGameModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
@@ -247,6 +475,7 @@
 </div>
 
 <script>
+// Actions joueurs
 function killPlayer(playerId) {
     if (confirm('Confirmer la mort de ce joueur ?')) {
         fetch(`/grimoire/{{ game.id }}/player/${playerId}/kill`, {method: 'POST'})
@@ -268,16 +497,36 @@ function togglePoison(playerId) {
 }
 
 function showPlayerModal(playerId) {
-    // TODO: Implémenter modal détails
     window.location.href = `/grimoire/{{ game.id }}/player/${playerId}`;
 }
 
+// Modal fin de partie
 function showEndGameModal() {
     document.getElementById('endGameModal').classList.remove('hidden');
 }
 
 function closeEndGameModal() {
     document.getElementById('endGameModal').classList.add('hidden');
+}
+
+// Progression ordre de nuit
+function updateProgress() {
+    const checkboxes = document.querySelectorAll('.night-checklist');
+    const checked = document.querySelectorAll('.night-checklist:checked').length;
+    const total = checkboxes.length;
+    const percentage = total > 0 ? (checked / total) * 100 : 0;
+    
+    document.getElementById('progressBar').style.width = percentage + '%';
+    document.getElementById('progressText').textContent = checked + ' / ' + total;
+    
+    // Si tout est coché, proposer de passer au jour
+    if (checked === total && total > 0) {
+        setTimeout(() => {
+            if (confirm('✅ Ordre de nuit terminé ! Passer au jour ?')) {
+                document.getElementById('nextPhaseForm').submit();
+            }
+        }, 500);
+    }
 }
 </script>
 {% endblock %}

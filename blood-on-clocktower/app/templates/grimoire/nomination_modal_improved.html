@@ -1,0 +1,146 @@
+<!-- Modal améliorée pour les nominations avec interface visuelle -->
+<div id="nominationModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-secondary rounded-lg p-8 max-w-5xl w-full mx-4 border border-gray-700">
+        <h2 class="text-3xl font-bold mb-6">Nouvelle Nomination</h2>
+        
+        <form id="nominationForm" method="POST" action="{{ url_for('grimoire.add_nomination', game_id=game.id) }}">
+            <input type="hidden" name="nominator_id" id="nominatorInput">
+            <input type="hidden" name="nominee_id" id="nomineeInput">
+            
+            <!-- Étape 1 : Sélectionner le nominateur -->
+            <div id="step1" class="mb-6">
+                <h3 class="text-xl font-bold mb-4 text-purple-400">1. Qui nomine ?</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                    {% for player in players %}
+                    <button type="button" 
+                            onclick="selectNominator({{ player.id }}, '{{ player.name }}')"
+                            class="nominator-btn p-4 bg-tertiary hover:bg-purple-700 border-2 border-gray-600 hover:border-purple-500 rounded-lg text-left transition-all">
+                        <div class="font-bold">{{ player.name }}</div>
+                        <div class="text-xs text-gray-400">Siège #{{ player.seat_position }}</div>
+                        {% if not player.is_alive %}
+                        <div class="text-xs text-red-400">💀 Mort</div>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+                <p class="text-sm text-gray-500 mt-3">Cliquez sur le joueur qui fait la nomination</p>
+            </div>
+
+            <!-- Étape 2 : Sélectionner le nominé (masquée initialement) -->
+            <div id="step2" class="mb-6 hidden">
+                <h3 class="text-xl font-bold mb-4 text-red-400">
+                    2. <span id="nominatorName"></span> nomine qui ?
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                    {% for player in players %}
+                    {% if player.is_alive %}
+                    <button type="button" 
+                            onclick="selectNominee({{ player.id }}, '{{ player.name }}')"
+                            class="nominee-btn p-4 bg-tertiary hover:bg-red-700 border-2 border-gray-600 hover:border-red-500 rounded-lg text-left transition-all">
+                        <div class="font-bold">{{ player.name }}</div>
+                        <div class="text-xs text-gray-400">Siège #{{ player.seat_position }}</div>
+                    </button>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="text-sm text-gray-500 mt-3">Cliquez sur le joueur nominé (seulement les vivants)</p>
+            </div>
+
+            <!-- Récapitulatif et validation (masqué initialement) -->
+            <div id="step3" class="mb-6 hidden">
+                <div class="bg-purple-900/30 border border-purple-700 rounded-lg p-6 mb-4">
+                    <h3 class="text-xl font-bold mb-3 text-center">Récapitulatif</h3>
+                    <p class="text-lg text-center">
+                        <span class="font-bold text-purple-400" id="finalNominator"></span>
+                        <span class="text-gray-400"> nomine </span>
+                        <span class="font-bold text-red-400" id="finalNominee"></span>
+                    </p>
+                </div>
+
+                <!-- Note pour le Virgin -->
+                <div class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-yellow-200">
+                        ⚠️ <strong>Rappel :</strong> Si le nominé est la Virgin et que c'est sa première nomination, 
+                        le nominateur (s'il est Townsfolk) sera exécuté immédiatement !
+                    </p>
+                </div>
+
+                <!-- Boutons -->
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg">
+                        ✅ Enregistrer la Nomination
+                    </button>
+                    <button type="button" onclick="resetNomination()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold text-lg">
+                        🔄 Recommencer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bouton Annuler (toujours visible) -->
+            <button type="button" onclick="closeNominationModal()" class="w-full bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-bold mt-4">
+                Annuler
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+let selectedNominatorId = null;
+let selectedNominatorName = '';
+let selectedNomineeId = null;
+let selectedNomineeName = '';
+
+function selectNominator(id, name) {
+    selectedNominatorId = id;
+    selectedNominatorName = name;
+    document.getElementById('nominatorInput').value = id;
+    document.getElementById('nominatorName').textContent = name;
+    
+    // Passer à l'étape 2
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.remove('hidden');
+}
+
+function selectNominee(id, name) {
+    // Ne pas permettre de se nominer soi-même
+    if (id === selectedNominatorId) {
+        alert('Un joueur ne peut pas se nominer lui-même !');
+        return;
+    }
+    
+    selectedNomineeId = id;
+    selectedNomineeName = name;
+    document.getElementById('nomineeInput').value = id;
+    document.getElementById('finalNominator').textContent = selectedNominatorName;
+    document.getElementById('finalNominee').textContent = selectedNomineeName;
+    
+    // Passer à l'étape 3
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step3').classList.remove('hidden');
+}
+
+function resetNomination() {
+    selectedNominatorId = null;
+    selectedNominatorName = '';
+    selectedNomineeId = null;
+    selectedNomineeName = '';
+    document.getElementById('nominatorInput').value = '';
+    document.getElementById('nomineeInput').value = '';
+    
+    // Retour à l'étape 1
+    document.getElementById('step3').classList.add('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step1').classList.remove('hidden');
+}
+
+function showNominationModal() {
+    resetNomination();
+    document.getElementById('nominationModal').classList.remove('hidden');
+}
+
+function closeNominationModal() {
+    document.getElementById('nominationModal').classList.add('hidden');
+    resetNomination();
+}
+</script>
+

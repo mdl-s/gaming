@@ -74,6 +74,16 @@ Application web complète pour gérer des parties de **Blood on the Clocktower**
   
 **Total : 87 personnages disponibles !**
 
+### 🎨 Version 2.1 - Améliorations UX ✅
+
+- **Historique complet** : Actions (tuer, empoisonner) enregistrées
+- **Nominations visuelles** : Interface en 3 étapes avec joueurs cliquables
+- **Aide Conteur** : Panneau contextuel avec checklist interactive
+  - Ordre de nuit avec progression
+  - Rappels spécifiques par rôle
+  - Conseils par édition
+  - Calculs automatiques
+
 ## 🚀 Installation
 
 ### Prérequis

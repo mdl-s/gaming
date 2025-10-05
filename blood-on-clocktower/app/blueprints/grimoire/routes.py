@@ -93,6 +93,17 @@ def kill_player(game_id, player_id):
     # Tuer le joueur
     if game.current_phase == Game.NIGHT:
         player.kill(night_number=game.current_night_number)
+        
+        # Enregistrer l'action dans l'historique
+        night_action = NightAction(
+            game_id=game.id,
+            night_number=game.current_night_number,
+            character_id=player.character_id,
+            player_id=player.id,
+            action_type='death',
+            notes=f"{player.name} est mort"
+        )
+        db.session.add(night_action)
     else:
         player.kill(day_number=game.current_day_number)
     
@@ -130,6 +141,20 @@ def toggle_poison(game_id, player_id):
         return jsonify({'error': 'Invalid player'}), 400
     
     player.is_poisoned = not player.is_poisoned
+    
+    # Enregistrer l'action dans l'historique si c'est la nuit
+    if game.current_phase == Game.NIGHT and player.is_poisoned:
+        night_action = NightAction(
+            game_id=game.id,
+            night_number=game.current_night_number,
+            character_id=player.character_id,
+            player_id=player.id,
+            target_player_id=player.id,
+            action_type='poison',
+            notes=f"{player.name} a été empoisonné"
+        )
+        db.session.add(night_action)
+    
     db.session.commit()
     
     return jsonify({'success': True, 'is_poisoned': player.is_poisoned})
